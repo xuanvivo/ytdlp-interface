@@ -152,7 +152,21 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
 			(mbox << confpath.string() << "\n\nAn exception occured when trying to load the settings file:\n\n" << e.what())();
 		}
 		if(!jconf.empty())
+		{
 			GUI::conf.from_json(jconf);
+			std::error_code ec;
+			if(!fs::exists(GUI::conf.ffmpeg_path, ec))
+			{
+				if(!ec)
+				{
+					if(fs::exists(".\\ffmpeg.exe", ec))
+					{
+						if(!ec)
+							GUI::conf.ffmpeg_path = ".\\";
+					}
+				}
+			}
+		}
 	}
 	else GUI::conf.outpath = util::get_sys_folder(FOLDERID_Downloads);
 

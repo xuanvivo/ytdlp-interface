@@ -57,7 +57,7 @@ private:
 		thr_qitem_data, thr_queue_remove, thr_ver_deno, thr_releases_deno, thr_updater_deno;
 	CComPtr<ITaskbarList3> i_taskbar;
 	UINT WM_TASKBAR_BUTTON_CREATED {0};
-	const std::string ver_tag {"v2.19.0"}, title {"ytdlp-interface " + ver_tag/*.substr(0, 5)*/};
+	const std::string ver_tag {"v2.19.1"}, title {"ytdlp-interface " + ver_tag/*.substr(0, 5)*/};
 	const unsigned MINW {900}, MINH {700}; // min client area size
 	nana::drawerbase::listbox::item_proxy *last_selected {nullptr};
 	nana::timer tmsg, tqueue, t_load_qitem_data, t_url_flash;
@@ -115,6 +115,7 @@ private:
 		void from_json(const nlohmann::json &j);
 		void to_json(nlohmann::json &j);
 		bool is_playlist() const noexcept { return is_gen_playlist || is_ytplaylist || is_bcplaylist || is_scplaylist; }
+		bool is_unknown() const noexcept { return !is_playlist() && !is_ytlink && !is_ytchan && !is_bclink && !is_yttab; }
 	};
 
 	class gui_bottoms
@@ -258,7 +259,7 @@ private:
 	widgets::Progress prog_updater, prog_updater_misc, prog_updater_deno;
 	widgets::Separator sep1, sep2, sep3;
 	nana::timer updater_t0, updater_t1, updater_t2, updater_t3;
-	bool updater_working {false};
+	bool updater_working {false}, updater_working_deno {false};
 
 	widgets::Title fm_alert_title;
 	widgets::Text fm_alert_text;

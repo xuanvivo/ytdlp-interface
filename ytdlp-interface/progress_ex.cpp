@@ -36,36 +36,12 @@ bool nana::progress_ex::create(window parent, const rectangle &r, bool visible, 
 				if(darkbg)
 					graph.frame_rectangle(rectangle {graph.size()}, color {"#777"}, 0);
 				auto width {graph.width()}, height {graph.height()};
-				auto hdc {reinterpret_cast<HDC>(const_cast<void *>(graph.context()))};
 				if(shadow_amount)
 				{
 					const double unit {static_cast<double>(shadow_amount) / static_cast<double>(width - 2)};
 					const unsigned pixels {static_cast<unsigned>(static_cast<double>(shadow_value) / unit) + 2};
-					for(int y {1}; y < height - 1; y++)
-					{
-						for(int x {1}; x < pixels; x++)
-						{
-							COLORREF color = GetPixel(hdc, x, y);
-							BYTE red {GetRValue(color)};
-							BYTE green {GetGValue(color)};
-							BYTE blue {GetBValue(color)};
-
-							if(darkbg)
-							{
-								red += 20;
-								green += 20;
-								blue += 20;
-							}
-							else
-							{
-								red -= 15;
-								green -= 15;
-								blue -= 15;
-							}
-
-							SetPixel(hdc, x, y, RGB(red, green, blue));
-						}
-					}
+					rectangle r { 1, 1, pixels, height };
+					graph.blend(r, colors::grey, darkbg ? .3 : .2);
 				}
 			}
 

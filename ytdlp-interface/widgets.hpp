@@ -753,8 +753,6 @@ namespace widgets
 
 	class conf_page : public panel_ex
 	{
-		//std::unique_ptr<nana::place> plc;
-
 	public:
 
 		conf_page() = default;
@@ -762,9 +760,6 @@ namespace widgets
 
 		void create(nana::window parent);
 		void refresh_theme();
-		//auto &get_place() { return *plc; }
-		//void div(std::string div_text) { plc->div(div_text); }
-		//auto &operator[](const char *field_name) { return plc->field(field_name); }
 	};
 }
 

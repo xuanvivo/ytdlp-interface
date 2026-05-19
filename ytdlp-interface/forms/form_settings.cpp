@@ -2220,7 +2220,7 @@ void GUI::updater_update_deno(themed_form &parent)
 		btn_update_deno.caption("Cancel");
 		thr_updater_deno = std::thread {[this]
 		{
-			updater_working = true;
+			updater_working_deno = true;
 			auto arc_path {fs::temp_directory_path() / url_latest_deno.substr(url_latest_deno.rfind('/') + 1)};
 			unsigned progval {0};
 			prog_updater_deno.amount(size_latest_deno);
@@ -2234,9 +2234,9 @@ void GUI::updater_update_deno(themed_form &parent)
 				prog_updater_deno.value(progval);
 			};
 
-			auto download_result {util::dl_inet_res(url_latest_deno, arc_path, &updater_working, cb_progress)};
+			auto download_result {util::dl_inet_res(url_latest_deno, arc_path, &updater_working_deno, cb_progress)};
 
-			if(updater_working)
+			if(updater_working_deno)
 			{
 				if(download_result.empty())
 				{
@@ -2273,7 +2273,7 @@ void GUI::updater_update_deno(themed_form &parent)
 					fs::remove(arc_path, ec);
 				}
 				else prog_updater_deno.caption(download_result);
-				updater_working = false;
+				updater_working_deno = false;
 				btn_update_deno.caption("Update deno");
 				thr_updater_deno.detach();
 			}
@@ -2375,6 +2375,7 @@ void GUI::updater_update_misc(bool ytdlp, fs::path target)
 									prog_updater_misc.caption("FFmpeg update complete");
 									l_ffmpeg_text.caption(ver_ffmpeg_latest.string() + "  (current)");
 									btn_update_ffmpeg.tooltip("");
+									updater_check_paths(true);
 								}
 							}
 							else prog_updater_misc.caption("Error: " + error);
@@ -2397,6 +2398,7 @@ void GUI::updater_update_misc(bool ytdlp, fs::path target)
 							l_ytdlp_text.caption(ver_ytdlp_latest.string() + "  (current)  [click to see changelog]");
 							l_ytdlp_text.error_mode(false);
 							btn_update_ytdlp.tooltip("");
+							updater_check_paths(false);
 						}
 						else prog_updater_misc.caption("Failed to move " + fname + " to set folder: " + ec.message());
 					}
@@ -2508,16 +2510,18 @@ bool GUI::updater_check_paths(bool ffmpeg_only)
 {
 	if(!fs::exists(conf.ffmpeg_path / "ffmpeg.exe"))
 	{
-		/*if(conf.ffmpeg_path == fs::current_path())
+		if(conf.ffmpeg_path == fs::current_path() || conf.ffmpeg_path.empty() && !fs::exists(appdir / "ffmpeg.exe"))
 			l_ffmpeg_path.caption("!!!  FFMPEG.EXE NOT FOUND IN THE PROGRAM FOLDER  !!!");
-		else l_ffmpeg_path.caption("!!!  FFMPEG.EXE NOT FOUND IN THE SELECTED FOLDER  !!!");*/
+		else l_ffmpeg_path.caption("!!!  FFMPEG.EXE NOT FOUND IN THE SELECTED FOLDER  !!!");
 		ver_ffmpeg = {0, 0, 0};
-		//l_ffmpeg_path.refresh_theme();
+		l_ffmpeg_path.refresh_theme();
 		updater_t1.start();
 		if(ffmpeg_only) return false;
 	}
 	else
 	{
+		if(fs::exists(appdir / "ffmpeg.exe"))
+			conf.ffmpeg_path = ".\\";
 		l_ffmpeg_path.update_caption();
 		l_ffmpeg_path.refresh_theme();
 	}
@@ -2535,7 +2539,7 @@ bool GUI::updater_check_paths(bool ffmpeg_only)
 			}
 			else if(fs::exists(appdir / ytdlp_fname))
 			{
-				GUI::conf.ytdlp_path = ".\\" + ytdlp_fname;
+				conf.ytdlp_path = ".\\" + ytdlp_fname;
 				l_ytdlp_path.update_caption();
 				get_version_ytdlp();
 			}
@@ -2552,7 +2556,12 @@ bool GUI::updater_check_paths(bool ffmpeg_only)
 			}
 			updater_t2.start();
 		}
-		else l_ytdlp_path.update_caption();
+		else 
+		{
+			if(conf.ytdlp_path.parent_path() == appdir)
+				conf.ytdlp_path = ".\\" + ytdlp_fname;
+			l_ytdlp_path.update_caption();
+		}
 		l_ytdlp_path.refresh_theme();
 	}
 	return true;

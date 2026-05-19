@@ -110,6 +110,8 @@ void GUI::make_form()
 
 	l_url.events().mouse_up([this]
 	{
+
+		const auto url_chars {L"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._~:/?#[]@!$&'()*+,;%="};
 		auto text {util::get_clipboard_text()};
 		if(text.find('\n') != -1)
 		{
@@ -119,8 +121,12 @@ void GUI::make_form()
 			lbq.auto_draw(false);
 			while(std::getline(ss, line))
 			{
-				if(line.back() == '\r')
-					line.pop_back();
+				const auto pos {line.find(L"https://")};
+				if(pos != -1 && pos > 0)
+					line = line.substr(pos);
+				const auto pos2 {line.find_first_not_of(url_chars, 0)};
+				if(pos2 != -1)
+					line = line.erase(pos2, -1);
 				if(!line.empty()) add_url(line);
 			}
 			if(items_initialized)
@@ -128,6 +134,12 @@ void GUI::make_form()
 		}
 		else if(!text.empty())
 		{
+			const auto pos {text.find(L"https://")};
+			if(pos != -1 && pos > 0)
+				text = text.substr(pos);
+			const auto pos2 {text.find_first_not_of(url_chars, 0)};
+			if(pos2 != -1)
+				text = text.erase(pos2, -1);
 			if(text.starts_with(LR"(https://www.youtube.com/watch?v=)"))
 				if(text.find(L"&list=") == 43)
 					text.erase(43);

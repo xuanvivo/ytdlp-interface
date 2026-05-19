@@ -1238,7 +1238,18 @@ void GUI::add_url(std::wstring url, bool refresh, bool saveq, const size_t cat)
 										auto it {bottom.playlist_info["entries"].end()};
 										bottom.playlist_info["entries"].erase(--it);
 									}
-									std::string URL {bottom.playlist_info["entries"][0]["url"]};
+									const auto &jpl {bottom.playlist_info["entries"]};
+									if(jpl.size() == 0)
+									{
+										lbq.set_line_text(url, {"---", "error: playlist with zero entries!", "---", "---", "---", "---"});
+										bottom.vidinfo.clear();
+										bottom.playlist_info.clear();
+										lbq.set_item_bg(url, ::widgets::theme::lbbg);
+										total_info_threads--;
+										active_info_threads--;
+										return;
+									}
+									std::string URL {jpl[0]["url"]};
 									cmd = L" --no-warnings -j " + qjs + cookies + fmt_sort + to_wstring(URL);
 									media_info = {util::run_piped_process(L'\"' + conf.ytdlp_path.wstring() + L'\"' + cmd, &bottom.working_info)};
 									if(!bottom.working_info)
@@ -1448,7 +1459,7 @@ void GUI::add_url(std::wstring url, bool refresh, bool saveq, const size_t cat)
 					std::wstring fsize_approx;
 					if(ver_ytdlp > version_t {2023, 11, 13})
 						fsize_approx = L" --compat-options manifest-filesize-approx";
-					std::wstring cmd {L" --no-warnings" + cookies + fsize_approx + L" -j " + 
+					std::wstring cmd {L" --no-warnings" + cookies + fsize_approx + L" -J --flat-playlist " + 
 						(conf.output_template.empty() ? L"" : L"-o \"" + conf.output_template + L'\"') + fmt_sort + L'\"' + url + L'\"'};
 					if(conf.cb_proxy && !conf.proxy.empty())
 						cmd = L" --proxy " + conf.proxy + cmd;
@@ -1480,6 +1491,50 @@ void GUI::add_url(std::wstring url, bool refresh, bool saveq, const size_t cat)
 								bottom.vidinfo.clear();
 								if(bottoms.contains(url))
 									json_error(e);
+							}
+							if(!bottom.vidinfo.empty() && bottom.vidinfo_contains("_type"))
+							{
+								if(bottom.vidinfo["_type"] == "playlist")
+								{
+									bottom.is_gen_playlist = true;
+									bottom.playlist_info = std::move(bottom.vidinfo);
+									const auto &jpl {bottom.playlist_info["entries"]};
+									if(jpl.size() == 0)
+									{
+										lbq.set_line_text(url, {"---", "error: playlist with zero entries!", "---", "---", "---", "---"});
+										bottom.vidinfo.clear();
+										bottom.playlist_info.clear();
+										lbq.set_item_bg(url, ::widgets::theme::lbbg);
+										total_info_threads--;
+										active_info_threads--;
+										return;
+									}
+									std::string URL {jpl[0]["url"]};
+									cmd = L" --no-warnings -j "+ cookies + fmt_sort + to_wstring(URL);
+									media_info = {util::run_piped_process(L'\"' + conf.ytdlp_path.wstring() + L'\"' + cmd, &bottom.working_info)};
+									if(!bottom.working_info)
+									{
+										bottom.vidinfo.clear();
+										bottom.playlist_info.clear();
+										lbq.set_item_bg(url, ::widgets::theme::lbbg);
+										total_info_threads--;
+										active_info_threads--;
+										return;
+									}
+									if(!media_info.empty() && media_info.front() == '{')
+									{
+										try { bottom.vidinfo = nlohmann::json::parse(media_info); }
+										catch(nlohmann::detail::exception e)
+										{
+											bottom.vidinfo.clear();
+											if(bottoms.contains(url))
+												json_error(e);
+										}
+										if(!bottom.vidinfo.empty() && qurl == url)
+											show_btnfmt(true);
+									}
+									else bottom.playlist_vid_cmdinfo = conf.ytdlp_path.filename().wstring() + cmd;
+								}
 							}
 						}
 					}
@@ -1640,7 +1695,9 @@ void GUI::add_url(std::wstring url, bool refresh, bool saveq, const size_t cat)
 					}
 					else if(bottom.working_info && bottom.info_thread.joinable())
 					{
-						lbq.set_line_text(url, {"", "yt-dlp did not provide any data for this URL!", "", "", "", "", ""});
+						if(conf.ytdlp_path.empty() || !fs::exists(conf.ytdlp_path))
+							lbq.set_line_text(url, {"", "can't get data for URL, yt-dlp.exe missing!", "", "", "", "", ""});
+						else lbq.set_line_text(url, {"", "yt-dlp did not provide any data for this URL!", "", "", "", "", ""});
 					}
 				}
 				if(!g_exiting)

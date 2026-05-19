@@ -1363,10 +1363,8 @@ void conf_tree::select(std::string field_name)
 void conf_page::create(nana::window parent)
 {
 	panel_ex::create(parent);
-	//plc = std::make_unique<nana::place>(*this);
 	refresh_theme();
 	events().expose([this] { refresh_theme(); });
-	//events().resized([this] { plc->collocate(); });
 }
 
 
